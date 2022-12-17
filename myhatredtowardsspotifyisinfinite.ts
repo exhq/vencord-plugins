@@ -16,29 +16,63 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-import { findOption, RequiredMessageOption } from "@api/Commands";
+
+import { sendBotMessage } from "@api/Commands";
 import { Devs } from "@utils/constants";
 import definePlugin from "@utils/types";
+import { FluxDispatcher, SelectedChannelStore } from "@webpack/common";
+import { Message } from "discord-types/general";
 
-async function youtuberify(link: string): Promise<string> {
-    return await fetch(`https://youtuber.exhq.workers.dev/${link}`).then(it => it.text());
+interface IMessageCreate {
+    type: "MESSAGE_CREATE";
+    optimistic: boolean;
+    isPushNotification: boolean;
+    channelId: string;
+    message: Message;
 }
 
+async function youtuberify(lmao: string): Promise<string> {
+    const res = await fetch(`https://youtuber.exhq.workers.dev/${lmao}`);
+    const url = (await res.json()) as string;
+    return url;
+}
 
+const getSubString = (s: string) => {
+    const regex = /https:\/\/open.spotify.com\/track\/[a-zA-Z0-9]+/g;
+    const matches = regex.exec(s);
+    if (matches !== null) {
+        return matches[0];
+    } else {
+        return "";
+    }
+};
 
 export default definePlugin({
-    name: "fuck spotify",
-    authors: [
-        Devs.echo
-    ],
-    description: "https://www.reddit.com/r/spotify/comments/xzez3f/",
-    dependencies: ["CommandsAPI"],
-    commands: [{
-        name: "youtubify",
-        options: [RequiredMessageOption],
-        description: "spotify bad. bad bad. spotify cringe. spotify stupid dumdum. spotify is hot garbage. i will singlehandedly ddos spotify",
-        execute: async opts => ({
-            content: await youtuberify(findOption(opts, "message", ""))
-        }),
-    }]
+    name: "youtuber",
+    authors: [Devs.echo],
+    description: "shows you the corresponding youtube link of a spotify track",
+
+    async onMessage(e: IMessageCreate) {
+        if (e.optimistic || e.type !== "MESSAGE_CREATE") return;
+        if (e.message.state === "SENDING") return;
+        if (e.message.author?.bot) return;
+        if (!e.message.content) return;
+        if (e.channelId !== SelectedChannelStore.getChannelId()) return;
+
+        if (e.message.content.toLowerCase().includes("open.spotify.com")) {
+            console.log("AAAAAAAAAAAAA");
+            const x = getSubString(e.message.content);
+            const funny = await youtuberify(x);
+
+            sendBotMessage(e.message.channel_id, { content: funny });
+        }
+    },
+
+    start() {
+        FluxDispatcher.subscribe("MESSAGE_CREATE", this.onMessage);
+    },
+
+    stop() {
+        FluxDispatcher.unsubscribe("MESSAGE_CREATE", this.onMessage);
+    },
 });
