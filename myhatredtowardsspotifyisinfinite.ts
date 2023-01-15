@@ -17,6 +17,10 @@
 */
 
 
+
+
+
+
 import { sendBotMessage } from "@api/Commands";
 import { Devs } from "@utils/constants";
 import definePlugin from "@utils/types";
@@ -31,10 +35,8 @@ interface IMessageCreate {
     message: Message;
 }
 
-async function youtuberify(lmao: string): Promise<string> {
-    const res = await fetch(`https://youtuber.exhq.workers.dev/${lmao}`);
-    const url = (await res.json()) as string;
-    return url;
+async function youtuberify(link: string): Promise<string> {
+    return await fetch(`https://youtuber.exhq.workers.dev/${link}`).then(it => it.text());
 }
 
 const getSubString = (s: string) => {
@@ -47,10 +49,11 @@ const getSubString = (s: string) => {
     }
 };
 
+
 export default definePlugin({
-    name: "youtuber",
+    name: "fuck spotify",
     authors: [Devs.echo],
-    description: "shows you the corresponding youtube link of a spotify track",
+    description: "aaaaaaaaaaaaaaaaaa",
 
     async onMessage(e: IMessageCreate) {
         if (e.optimistic || e.type !== "MESSAGE_CREATE") return;
@@ -60,13 +63,13 @@ export default definePlugin({
         if (e.channelId !== SelectedChannelStore.getChannelId()) return;
 
         if (e.message.content.toLowerCase().includes("open.spotify.com")) {
-            console.log("AAAAAAAAAAAAA");
             const x = getSubString(e.message.content);
             const funny = await youtuberify(x);
-
             sendBotMessage(e.message.channel_id, { content: funny });
         }
+
     },
+
 
     start() {
         FluxDispatcher.subscribe("MESSAGE_CREATE", this.onMessage);
@@ -76,3 +79,5 @@ export default definePlugin({
         FluxDispatcher.unsubscribe("MESSAGE_CREATE", this.onMessage);
     },
 });
+
+
